@@ -21,6 +21,7 @@ export const globalStyles = StyleSheet.create({
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
+    width: "30%"
   },
   buttonText: {
     fontFamily: 'OpenSans-Bold',

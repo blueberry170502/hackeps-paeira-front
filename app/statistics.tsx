@@ -1,97 +1,79 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, ScrollView } from 'react-native';
+import React from 'react';
+import { View, Text, StyleSheet, Dimensions } from 'react-native';
 import { LineChart } from 'react-native-chart-kit';
-import { Header } from '../components/Header';
-import { globalStyles } from '../styles/globalStyles';
-import { getHistoricByParkingId } from '../services/ParkingService';
-import { Historic } from '../types/parking';
+import { OccupancyRecord } from '../types/parking';
 
-export default function Statistics() {
-  const [historic, setHistoric] = useState<Historic | null>(null);
+interface StatisticsProps {
+  occupancyHistory: OccupancyRecord[];
+}
 
-  useEffect(() => {
-    const fetchHistoric = async () => {
-      if (selectedParking) {
-        try {
-          const data = await getHistoricByParkingId(selectedParking.parking_id);
-          setHistoric(data);
-        } catch (error) {
-          console.error('Error fetching historic data:', error);
-        }
-      }
-    };
-
-    fetchHistoric();
-  }, [selectedParking]);
-
-  if (!selectedParking || !historic) {
-    return (
-      <ScrollView style={globalStyles.container}>
-        <Header title="Estadísticas de Ocupación" />
-        <View style={styles.content}>
-          <Text style={globalStyles.text}>Por favor, seleccione un parking o espere mientras se cargan los datos.</Text>
-        </View>
-      </ScrollView>
-    );
-  }
-
-  const chartData = {
-    labels: historic.History.map(entry => entry.hour),
+const Statistics: React.FC<StatisticsProps> = ({ occupancyHistory }) => {
+  const data = {
+    labels: occupancyHistory.map(record => {
+      const date = new Date(record.timestamp);
+      return `${date.getHours()}:${date.getMinutes().toString().padStart(2, '0')}`;
+    }),
     datasets: [{
-      data: historic.History.map(entry => entry.occupied_spot)
+      data: occupancyHistory.map(record => record.occupiedSpaces)
     }]
   };
 
-  const peakHour = historic.History.reduce((max, entry) => 
-    entry.occupied_spot > max.occupied_spot ? entry : max
+  const peakHour = occupancyHistory.reduce((max, record) => 
+    record.occupiedSpaces > max.occupiedSpaces ? record : max
   );
-  const lowHour = historic.History.reduce((min, entry) => 
-    entry.occupied_spot < min.occupied_spot ? entry : min
+  const lowHour = occupancyHistory.reduce((min, record) => 
+    record.occupiedSpaces < min.occupiedSpaces ? record : min
   );
 
   return (
-    <ScrollView style={globalStyles.container}>
-      <Header title={`Estadísticas - ${selectedParking.name}`} />
-      <View style={styles.content}>
-        <LineChart
-          data={chartData}
-          width={Dimensions.get('window').width - 40}
-          height={220}
-          chartConfig={{
-            backgroundColor: '#ffffff',
-            backgroundGradientFrom: '#ffffff',
-            backgroundGradientTo: '#ffffff',
-            decimalPlaces: 0,
-            color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
-            labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
-            style: {
-              borderRadius: 16
-            },
-            propsForDots: {
-              r: "6",
-              strokeWidth: "2",
-              stroke: "#2196F3"
-            }
-          }}
-          bezier
-          style={styles.chart}
-        />
-        <View style={styles.infoContainer}>
-          <Text style={globalStyles.text}>
-            Hora pico: {peakHour.hour} ({peakHour.occupied_spot} plazas ocupadas)
-          </Text>
-          <Text style={globalStyles.text}>
-            Hora valle: {lowHour.hour} ({lowHour.occupied_spot} plazas ocupadas)
-          </Text>
-        </View>
+    <View style={styles.container}>
+      <Text style={styles.title}>Estadísticas de Ocupación</Text>
+      <LineChart
+        data={data}
+        width={Dimensions.get('window').width - 40}
+        height={220}
+        chartConfig={{
+          backgroundColor: '#ffffff',
+          backgroundGradientFrom: '#ffffff',
+          backgroundGradientTo: '#ffffff',
+          decimalPlaces: 0,
+          color: (opacity = 1) => `rgba(33, 150, 243, ${opacity})`,
+          labelColor: (opacity = 1) => `rgba(0, 0, 0, ${opacity})`,
+          style: {
+            borderRadius: 16
+          },
+          propsForDots: {
+            r: "6",
+            strokeWidth: "2",
+            stroke: "#2196F3"
+          }
+        }}
+        bezier
+        style={styles.chart}
+      />
+      <View style={styles.infoContainer}>
+        <Text style={styles.infoText}>
+          Hora pico: {new Date(peakHour.timestamp).toLocaleTimeString()} ({peakHour.occupiedSpaces} plazas)
+        </Text>
+        <Text style={styles.infoText}>
+          Hora valle: {new Date(lowHour.timestamp).toLocaleTimeString()} ({lowHour.occupiedSpaces} plazas)
+        </Text>
       </View>
-    </ScrollView>
+    </View>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  content: {
+  container: {
+    flex: 1,
     padding: 20,
+    backgroundColor: '#f0f0f0',
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 20,
   },
   chart: {
     marginVertical: 8,
@@ -103,5 +85,12 @@ const styles = StyleSheet.create({
     padding: 15,
     marginTop: 20,
   },
+  infoText: {
+    fontSize: 16,
+    color: '#333',
+    marginBottom: 10,
+  },
 });
+
+export default Statistics;
 

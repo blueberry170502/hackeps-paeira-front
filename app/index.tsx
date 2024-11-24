@@ -1,14 +1,16 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { useParkingData } from '../contexts/ParkingDataContext';
+import React, { useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView } from 'react-native';
+import { Link } from 'expo-router';
+import { ChartIcon, MapIcon, BellIcon, BellSlashIcon } from '../components/Icons';
 import { Header } from '../components/Header';
 import { ParkingSelector } from '../components/ParkingSelector';
 import { globalStyles } from '../styles/globalStyles';
-import { getParkingById } from '@/services/ParkingService';
-import { useInterval } from '@/hooks/useInterval';
+import { getParkingById } from '../services/ParkingService';
+import { useParkingData } from '@/contexts/ParkingDataContext';
 
 export default function Dashboard() {
-  const { parkings, selectedParking, setSelectedParking, isLoading, fetchParkings } = useParkingData();
+  const { parkings, selectedParking, setSelectedParking } = useParkingData();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
 
   const handleSelectParking = async (parkingId: number) => {
     try {
@@ -19,19 +21,13 @@ export default function Dashboard() {
     }
   };
 
+  const toggleNotifications = () => {
+    setNotificationsEnabled(!notificationsEnabled);
+  };
+
   const availableSpaces = selectedParking
     ? selectedParking.max_spots - selectedParking.occupied_spots
     : 0;
-
-  if (isLoading){
-    return (
-      <View>
-        <Text>Loading</Text>
-      </View>
-    )
-  }
-
-  useInterval(fetchParkings, 2000);
 
   return (
     <ScrollView style={globalStyles.container}>
@@ -50,6 +46,30 @@ export default function Dashboard() {
             <Text style={[globalStyles.title, styles.availableNumber]}>{availableSpaces}</Text>
           </View>
         )}
+        <View style={styles.buttonContainer}>
+          <Link href="/statistics" asChild>
+            <TouchableOpacity style={globalStyles.button}>
+              <ChartIcon width={24} height={24} fill="#ffffff" />
+              <Text style={globalStyles.buttonText}>Estadísticas</Text>
+            </TouchableOpacity>
+          </Link>
+          <Link href="/parking-map" asChild>
+            <TouchableOpacity style={globalStyles.button}>
+              <MapIcon width={24} height={24} fill="#ffffff" />
+              <Text style={globalStyles.buttonText}>Mapa</Text>
+            </TouchableOpacity>
+          </Link>
+          <TouchableOpacity style={globalStyles.button} onPress={toggleNotifications}>
+            {notificationsEnabled ? (
+              <BellIcon width={24} height={24} fill="#ffffff" />
+            ) : (
+              <BellSlashIcon width={24} height={24} fill="#ffffff" />
+            )}
+            <Text style={globalStyles.buttonText}>
+              {notificationsEnabled ? 'Desactivar' : 'Activar'} Notificaciones
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -89,4 +109,3 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
 });
-

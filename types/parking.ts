@@ -20,3 +20,7 @@ export interface Parking {
     parking_id: number;
     name: string;
   }
+  export interface OccupancyRecord {
+    timestamp: string;
+    occupiedSpaces: number;
+  }
